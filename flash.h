@@ -45,6 +45,14 @@
 typedef uintptr_t chipaddr;
 #define PRIxPTR_WIDTH ((int)(sizeof(uintptr_t)*2))
 
+typedef struct {
+	unsigned int start;
+	unsigned int end;
+	unsigned int included;
+	char *name;
+	char *file;
+} romentry_t;
+
 int register_shutdown(int (*function) (void *data), void *data);
 void *programmer_map_flash_region(const char *descr, uintptr_t phys_addr, size_t len);
 void programmer_unmap_flash_region(void *virt_addr, size_t len);
@@ -321,6 +329,7 @@ int process_include_args(void);
 int read_romlayout(char *name);
 int handle_romentries(const struct flashctx *flash, uint8_t *oldcontents, uint8_t *newcontents);
 void layout_cleanup(void);
+romentry_t *get_next_included_romentry(unsigned int start);
 int build_new_image(struct flashctx *flash, int oldcontents_valid, uint8_t *oldcontents, uint8_t *newcontents);
 
 /* spi.c */

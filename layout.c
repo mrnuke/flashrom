@@ -38,13 +38,6 @@
 #define WHITESPACE_CHARS " \t"
 #define INCLUDE_INSTR "source"
 
-typedef struct {
-	unsigned int start;
-	unsigned int end;
-	unsigned int included;
-	char *name;
-	char *file;
-} romentry_t;
 
 /* rom_entries store the entries specified in a layout file and associated run-time data */
 static romentry_t rom_entries[MAX_ROMLAYOUT];

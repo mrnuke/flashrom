@@ -1198,7 +1198,7 @@ int read_buf_from_file(unsigned char *buf, unsigned long size,
 	return 0;
 }
 
-int write_buf_to_file(unsigned char *buf, unsigned long size,
+int write_dump_to_file(unsigned char *buf, unsigned long size,
 		      const char *filename)
 {
 	unsigned long numbytes;
@@ -1223,14 +1223,74 @@ int write_buf_to_file(unsigned char *buf, unsigned long size,
 	return 0;
 }
 
+int write_buf_to_file(unsigned char *buf, unsigned long size,
+		      const char *filename)
+{
+	romentry_t *l;
+	int ret = 0;
+
+	ret = write_dump_to_file(buf, size, filename);
+	if (ret)
+		return ret;
+
+	l = get_next_included_romentry(0);
+
+	while (l != NULL) {
+		const char* name = (l->file[0] == '\0') ? l->name : l->file;
+		unsigned int len = l->end - l->start + 1;
+		msg_gdbg2("Writing \"%s\" to \"%s\" 0x%08x - 0x%08x (%uB)... ",
+			  l->name, l->file, l->start, l->end, len);
+		if(write_dump_to_file(buf + l->start, len, name)) {
+			msg_gdbg2("failed. ");
+			return 1;
+		}
+		msg_gdbg2("done. ");
+		l = get_next_included_romentry(l->end + 1);
+	};
+
+	return 0;
+}
+
+int read_flash_to_buf(struct flashctx *flash, uint8_t *buf)
+{
+	romentry_t *l;
+	const struct flashchip *chip = flash->chip;
+
+	if (!chip->read) {
+		msg_cerr("No read function available for this flash chip.\n");
+		return 1;
+	}
+
+	l = get_next_included_romentry(0);
+	/* No included rom entries. Assume complete readout wanted. */
+	if (l == NULL)
+		return chip->read(flash, buf, 0, chip->total_size * 1024);
+
+	do {
+		unsigned int len = l->end - l->start + 1;
+		msg_gdbg2("Reading \"%s\" 0x%08x - 0x%08x (%uB)... ", l->name,
+			  l->start, l->end, len);
+		if(chip->read(flash, buf + l->start, l->start, len)) {
+			msg_gdbg2("failed. ");
+			return 1;
+		}
+		msg_gdbg2("done. ");
+		l = get_next_included_romentry(l->end + 1);
+	} while (l != NULL);
+
+	return 0;
+}
+
 int read_flash_to_file(struct flashctx *flash, const char *filename)
 {
 	unsigned long size = flash->chip->total_size * 1024;
-	unsigned char *buf = calloc(size, sizeof(char));
 	int ret = 0;
+	uint8_t *buf;
 
 	msg_cinfo("Reading flash... ");
-	if (!buf) {
+
+	buf = calloc(size, sizeof(uint8_t));
+	if (buf == NULL) {
 		msg_gerr("Memory allocation failed!\n");
 		msg_cinfo("FAILED.\n");
 		return 1;
@@ -1240,9 +1300,9 @@ int read_flash_to_file(struct flashctx *flash, const char *filename)
 		ret = 1;
 		goto out_free;
 	}
-	if (flash->chip->read(flash, buf, 0, size)) {
+	ret = read_flash_to_buf(flash, buf);
+	if (ret != 0) {
 		msg_cerr("Read operation failed!\n");
-		ret = 1;
 		goto out_free;
 	}
 
