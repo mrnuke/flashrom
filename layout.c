@@ -532,7 +532,26 @@ static int read_content_from_file(romentry_t *entry, uint8_t *newcontents)
 	return 0;
 }
 
-int handle_romentries(const struct flashctx *flash, uint8_t *oldcontents, uint8_t *newcontents)
+static void copy_old_content(struct flashctx *flash, int oldcontents_valid, uint8_t *oldcontents, uint8_t *newcontents, unsigned int start, unsigned int size)
+{
+	if (!oldcontents_valid) {
+		/* oldcontents is a zero-filled buffer. By reading into
+		 * oldcontents, we avoid a rewrite of identical regions even if
+		 * an initial full chip read didn't happen. */
+		msg_gdbg2("Read a chunk starting from 0x%06x (len=0x%06x).\n",
+			  start, size);
+		flash->chip->read(flash, oldcontents + start, start, size);
+	}
+	memcpy(newcontents + start, oldcontents + start, size);
+}
+
+/**
+ * Modify @newcontents so that it contains the data that should be on the chip
+ * eventually. In the case the user wants to update only parts of it, copy
+ * the chunks to be preserved from @oldcontents to @newcontents. If @oldcontents
+ * is not valid, we need to fetch the current data from the chip first.
+ */
+int build_new_image(struct flashctx *flash, int oldcontents_valid, uint8_t *oldcontents, uint8_t *newcontents)
 {
 	unsigned int start = 0;
 	romentry_t *entry;
@@ -551,14 +570,15 @@ int handle_romentries(const struct flashctx *flash, uint8_t *oldcontents, uint8_
 		entry = get_next_included_romentry(start);
 		/* No more romentries for remaining region? */
 		if (!entry) {
-			memcpy(newcontents + start, oldcontents + start,
-			       size - start);
+			copy_old_content(flash, oldcontents_valid, oldcontents,
+					 newcontents, start, size - start);
 			break;
 		}
 		/* For non-included region, copy from old content. */
 		if (entry->start > start)
-			memcpy(newcontents + start, oldcontents + start,
-			       entry->start - start);
+			copy_old_content(flash, oldcontents_valid, oldcontents,
+					 newcontents, start,
+					 entry->start - start);
 		/* For included region, copy from file if specified. */
 		if (read_content_from_file(entry, newcontents) != 0)
 			return 1;
