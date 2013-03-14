@@ -173,6 +173,7 @@
 #define ATMEL_AT45DB021A	/* No ID available */
 #define ATMEL_AT45DB021B	/* No ID available */
 #define ATMEL_AT45DB021D	0x2300
+#define ATMEL_AT45DB021E	/* same as above but with EDI 0x0100 */
 #define ATMEL_AT45DB041A	/* No ID available */
 #define ATMEL_AT45DB041D	0x2400
 #define ATMEL_AT45DB081A	/* No ID available */
@@ -180,9 +181,11 @@
 #define ATMEL_AT45DB161		/* No ID available */
 #define ATMEL_AT45DB161B	/* No ID available */
 #define ATMEL_AT45DB161D	0x2600
+#define ATMEL_AT45DB161E	/* same as above but with EDI 0x0100 */
 #define ATMEL_AT45DB321		/* No ID available */
 #define ATMEL_AT45DB321B	/* No ID available */
 #define ATMEL_AT45DB321C	0x2700
+#define ATMEL_AT45DB321E	/* same as above but with EDI 0x0100 */
 #define ATMEL_AT45DB321D	0x2701 /* Buggy data sheet */
 #define ATMEL_AT45DB642		/* No ID available */
 #define ATMEL_AT45DB642D	0x2800
