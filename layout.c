@@ -23,6 +23,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <errno.h>
+#ifndef __LIBPAYLOAD__
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
 #include "flash.h"
 #include "programmer.h"
 
@@ -33,6 +38,7 @@ typedef struct {
 	unsigned int end;
 	unsigned int included;
 	char name[256];
+	char *file;
 } romentry_t;
 
 /* rom_entries store the entries specified in a layout file and associated run-time data */
@@ -85,6 +91,7 @@ int read_romlayout(char *name)
 		rom_entries[num_rom_entries].start = strtol(tstr1, (char **)NULL, 16);
 		rom_entries[num_rom_entries].end = strtol(tstr2, (char **)NULL, 16);
 		rom_entries[num_rom_entries].included = 0;
+		rom_entries[num_rom_entries].file = NULL;
 		num_rom_entries++;
 	}
 
@@ -138,14 +145,9 @@ int register_include_arg(char *name)
 static int find_romentry(char *name)
 {
 	int i;
-
-	if (!num_rom_entries)
-		return -1;
-
 	msg_gspew("Looking for region \"%s\"... ", name);
 	for (i = 0; i < num_rom_entries; i++) {
-		if (!strcmp(rom_entries[i].name, name)) {
-			rom_entries[i].included = 1;
+		if (strcmp(rom_entries[i].name, name) == 0) {
 			msg_gspew("found.\n");
 			return i;
 		}
@@ -167,19 +169,31 @@ int process_include_args(void)
 
 	/* User has specified an area, but no layout file is loaded. */
 	if (num_rom_entries == 0) {
-		msg_gerr("Region requested (with -i \"%s\"), "
-			 "but no layout data is available.\n",
+		msg_gerr("Region requested (with -i/--image \"%s\"),\n"
+			 "but no layout data is available. To include one use the -l/--layout syntax).\n",
 			 include_args[0]);
 		return 1;
 	}
 
 	for (i = 0; i < num_include_args; i++) {
-		if (find_romentry(include_args[i]) < 0) {
-			msg_gerr("Invalid region specified: \"%s\".\n",
-				 include_args[i]);
+		char *name = strtok(include_args[i], ":"); /* -i <image>[:<file>] */
+		int idx = find_romentry(name);
+		if (idx < 0) {
+			msg_gerr("Invalid region specified: \"%s\".\n", include_args[i]);
 			return 1;
 		}
+		rom_entries[idx].included = 1;
 		found++;
+
+		char *file = strtok(NULL, ""); /* remaining non-zero length token or NULL */
+		if (file != NULL) {
+			file = strdup(file);
+			if (file == NULL) {
+				msg_gerr("Out of memory!\n");
+				return 1;
+			}
+			rom_entries[idx].file = file;
+		}
 	}
 
 	msg_ginfo("Using region%s: \"%s\"", num_include_args > 1 ? "s" : "",
@@ -200,6 +214,8 @@ void layout_cleanup(void)
 	num_include_args = 0;
 
 	for (i = 0; i < num_rom_entries; i++) {
+		free(rom_entries[i].file);
+		rom_entries[i].file = NULL;
 		rom_entries[i].included = 0;
 	}
 	num_rom_entries = 0;
@@ -232,6 +248,52 @@ romentry_t *get_next_included_romentry(unsigned int start)
 	return best_entry;
 }
 
+/* If a file name is specified for this region, read the file contents and
+ * overwrite @newcontents in the range specified by @entry. */
+static int read_content_from_file(romentry_t *entry, uint8_t *newcontents)
+{
+	char *file = entry->file;
+	if (file == NULL)
+		return 0;
+
+	int len = entry->end - entry->start + 1;
+	FILE *fp;
+	if ((fp = fopen(file, "rb")) == NULL) {
+		msg_gerr("Error: Opening layout image file \"%s\" failed: %s\n", file, strerror(errno));
+		return 1;
+	}
+
+	struct stat file_stat;
+	if (fstat(fileno(fp), &file_stat) != 0) {
+		msg_gerr("Error: Getting metadata of layout image file \"%s\" failed: %s\n", file, strerror(errno));
+		fclose(fp);
+		return 1;
+	}
+	if (file_stat.st_size != len) {
+		msg_gerr("Error: Image size (%jd B) doesn't match the flash chip's size (%d B)!\n",
+			 (intmax_t)file_stat.st_size, len);
+		fclose(fp);
+		return 1;
+	}
+
+	int numbytes = fread(newcontents + entry->start, 1, len, fp);
+	if (ferror(fp)) {
+		msg_gerr("Error: Reading layout image file \"%s\" failed: %s\n", file, strerror(errno));
+		fclose(fp);
+		return 1;
+	}
+	if (fclose(fp)) {
+		msg_gerr("Error: Closing layout image file \"%s\" failed: %s\n", file, strerror(errno));
+		return 1;
+	}
+	if (numbytes != len) {
+		msg_gerr("Error: Failed to read layout image file \"%s\" completely.\n"
+			 "Got %d bytes, wanted %d!\n", file, numbytes, len);
+		return 1;
+	}
+	return 0;
+}
+
 int handle_romentries(const struct flashctx *flash, uint8_t *oldcontents, uint8_t *newcontents)
 {
 	unsigned int start = 0;
@@ -259,6 +321,10 @@ int handle_romentries(const struct flashctx *flash, uint8_t *oldcontents, uint8_
 		if (entry->start > start)
 			memcpy(newcontents + start, oldcontents + start,
 			       entry->start - start);
+		/* For included region, copy from file if specified. */
+		if (read_content_from_file(entry, newcontents) != 0)
+			return 1;
+
 		/* Skip to location after current romentry. */
 		start = entry->end + 1;
 		/* Catch overflow. */

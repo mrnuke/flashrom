@@ -6,7 +6,7 @@ flashrom \- detect, read, write, verify and erase flash chips
 \fB\-p\fR <programmername>[:<parameters>]
                [\fB\-E\fR|\fB\-r\fR <file>|\fB\-w\fR <file>|\fB\-v\fR <file>] \
 [\fB\-c\fR <chipname>]
-               [\fB\-l\fR <file> [\fB\-i\fR <image>]] [\fB\-n\fR] [\fB\-f\fR]]
+               [\fB\-l\fR <file> [\fB\-i\fR <image>[:<file>]]...] [\fB\-n\fR] [\fB\-f\fR]]
          [\fB\-V\fR[\fBV\fR[\fBV\fR]]] [\fB-o\fR <logfile>]
 .SH DESCRIPTION
 .B flashrom
@@ -103,44 +103,45 @@ size for the flash bus.
 * Force write even if write is known bad.
 .TP
 .B "\-l, \-\-layout <file>"
-Read ROM layout from
+Read layout entries from
 .BR <file> .
 .sp
-flashrom supports ROM layouts. This allows you to flash certain parts of
-the flash chip only. A ROM layout file contains multiple lines with the
-following syntax:
+A layout entry describes an address region of the flash chip and gives it a name. This allows to access certain
+parts of the flash chip only. A layout file can contain multiple entries one per line with the following syntax:
 .sp
-.B "  startaddr:endaddr imagename"
+.B "  startaddr:endaddr regionname"
 .sp
 .BR "startaddr " "and " "endaddr "
-are hexadecimal addresses within the ROM file and do not refer to any
-physical address. Please note that using a 0x prefix for those hexadecimal
+are hexadecimal addresses within the ROM file representing the flash ROM contents.
+Please note that using a 0x prefix for those hexadecimal
 numbers is not necessary, but you can't specify decimal/octal numbers.
-.BR "imagename " "is an arbitrary name for the region/image from"
-.BR " startaddr " "to " "endaddr " "(both addresses included)."
+.BR "regionname " "is an arbitrary name for the region from "
+.BR "startaddr " "to " "endaddr " "(both addresses included)."
 .sp
-Example:
+Example content of file rom.layout:
 .sp
   00000000:00008fff gfxrom
   00009000:0003ffff normal
   00040000:0007ffff fallback
 .sp
+.TP
+.B "\-i, \-\-image <name>[:<file>]"
+Work on the flash region
+.B name
+instead of the full address space if a layout file is given and parsed correctly.
+Multiple such image parameters can be used to include the union of different regions.
+The optional
+.B file
+parameter specifies the name of an image file that is used to map the contents of that very region only.
+This is useful for example if you want to write only a part of the flash chip and leave everything else alone
+without preparing an image of the complete chip manually:
+.sp
 If you only want to update the image named
-.BR "normal " "in a ROM based on the layout above, run"
-.sp
-.B "  flashrom \-p prog \-\-layout rom.layout \-\-image normal \-w some.rom"
-.sp
-To update only the images named
-.BR "normal " "and " "fallback" ", run:"
+.BR "normal " "and " "fallback " "in a ROM based on the layout mentioned above, run"
 .sp
 .B "  flashrom \-p prog \-l rom.layout \-i normal -i fallback \-w some.rom"
 .sp
-Overlapping sections are not supported.
-.TP
-.B "\-i, \-\-image <imagename>"
-Only flash region/image
-.B <imagename>
-from flash layout.
+.RB "Overlapping sections are resolved in an implementation-dependent manner - do " "not " "rely on it."
 .TP
 .B "\-L, \-\-list\-supported"
 List the flash chips, chipsets, mainboards, and external programmers

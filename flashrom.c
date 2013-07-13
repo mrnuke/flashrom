@@ -1983,9 +1983,11 @@ int doit(struct flashctx *flash, int force, const char *filename, int read_it,
 	}
 	msg_cinfo("done.\n");
 
-	// This should be moved into each flash part's code to do it 
-	// cleanly. This does the job.
-	handle_romentries(flash, oldcontents, newcontents);
+	if (handle_romentries(flash, oldcontents, newcontents)) {
+		msg_gerr("Could not prepare the data to be written due to problems with the layout,\n"
+			 "aborting.\n");
+		goto out;
+	}
 
 	// ////////////////////////////////////////////////////////////
 
