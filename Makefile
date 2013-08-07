@@ -329,7 +329,7 @@ CLI_OBJS = cli_classic.o cli_output.o print.o
 SVNVERSION := $(shell ./util/getrevision.sh -u)
 
 RELEASE := 0.9.7
-VERSION := $(RELEASE)-r$(SVNVERSION)
+VERSION := $(RELEASE)-$(SVNVERSION)
 RELEASENAME ?= $(VERSION)
 
 SVNDEF := -D'FLASHROM_VERSION="$(VERSION)"'

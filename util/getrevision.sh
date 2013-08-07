@@ -5,6 +5,7 @@
 # Copyright (C) 2005 coresystems GmbH <stepan@coresystems.de>
 # Copyright (C) 2009,2010 Carl-Daniel Hailfinger
 # Copyright (C) 2010 Chromium OS Authors
+# Copyright (C) 2013 Stefan Tauner
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,18 +24,17 @@
 
 EXIT_SUCCESS=0
 EXIT_FAILURE=1
+date_format="+%Y-%m-%dT%H:%M:%S%z" # There is only one valid timeformat FFS! ISO 8601
 
 svn_revision() {
 	LC_ALL=C svnversion -cn . 2>/dev/null | \
-		sed -e "s/.*://" -e "s/\([0-9]*\).*/\1/" | \
-		grep "[0-9]" ||
+		sed -e "s/.*://" -e "s/\([0-9]*\).*/r\1/" | \
+		grep "r[0-9]" ||
 	LC_ALL=C svn info . 2>/dev/null | \
-		awk '/^Revision:/ {print $$2 }' | \
-		grep "[0-9]" ||
-	LC_ALL=C git svn info . 2>/dev/null | \
-		awk '/^Revision:/ {print $$2 }' | \
-		grep "[0-9]" ||
-	echo ''
+		grep "Last Changed Rev:" | \
+		sed -e "s/^Last Changed Rev: *//" -e "s/\([0-9]*\).*/r\1/" | \
+		grep "r[0-9]" ||
+	echo "unknown"
 }
 
 svn_url() {
@@ -45,74 +45,81 @@ svn_url() {
 	      )
 }
 
+svn_has_local_changes() {
+	svn status | egrep '^ *[ADMR] *' > /dev/null
+}
+
 svn_timestamp() {
-	local date_format="+%Y-%m-%d %H:%M:%S"
 	local timestamp
 
-	# are there local changes in the client?
-	if svn status | egrep '^ *[ADMR] *' > /dev/null ; then
-		timestamp=$(date "${date_format} +")
+	if svn_has_local_changes ; then
+		timestamp=$(date "${date_format}")
 	else
 		# No local changes, get date of the last log record.
 		local last_commit_date=$(svn info | grep '^Last Changed Date:' | \
 		                         awk '{print $4" "$5" "$6}')
-		timestamp=$(date --utc --date "${last_commit_date}" \
-			        "${date_format} UTC")
+		timestamp=$(date -d "${last_commit_date}" "${date_format}")
 	fi
 
 	echo "${timestamp}"
 }
 
-git_revision() {
-	echo $(git log --oneline | head -1 | awk '{print $1}')
-}
-
-# Retrieve svn revision using git log data (for git mirrors)
+# Retrieve svn revision using git log data (for git-svn mirrors)
 gitsvn_revision() {
 	local r
 
-	git log|
-		grep git-svn-id|
-		sed 's/.*git-svn-id:[[:blank:]]*\([^@]\+\)@[0-9]\+[[:blank:]]\+\([^[:blank:]]\+\)/\1 \2/'|
-		sort|
-		uniq|
-		read url uuid
-
-	r=$(git log --grep="git-svn-id.*$uuid"| grep git-svn-id | \
-		sed 's/.*@//;s/[[:blank:]].*//'| \
-		sort -n | \
-		tail -1)
+	# If this is a "native" git-svn clone we could use git svn log like so
+	# if [ -e .git/svn/.metadata ]; then
+	# 	r=$(git svn log --oneline -1 | sed 's/^r//;s/[[:blank:]].*//')
+	# else
+		r=$(git log --grep git-svn-id -1 | \
+			grep git-svn-id | \
+			sed 's/.*@/r/;s/[[:blank:]].*//')
+	# fi
 
 	echo "${r}"
 }
 
+git_has_local_changes() {
+	git update-index -q --refresh
+	! git diff-index --quiet HEAD --
+}
+
 git_timestamp() {
-	local date_format="+%b %d %Y %H:%M:%S"
 	local timestamp
 
-	# are there local changes in the client?
-	if git status | \
-	   egrep '^# Change(s to be committed|d but not updated):$' > /dev/null
-	then
-		timestamp=$(date "${date_format} +")
+	# are there local changes?
+	if git_has_local_changes ; then
+		timestamp=$(date "${date_format}")
 	else
-		# No local changes, get date of the last log record.
-		local last_commit_date=$(git log | head -3 | grep '^Date:' | \
-		                         awk '{print $3" "$4" "$6" "$5" "$7}')
-		timestamp=$(date --utc --date "${last_commit_date}" \
-		            "${date_format} UTC")
+		# No local changes, get date of the last commit
+		timestamp=$(date -d "$(git log --pretty=format:"%cD" -1)" "${date_format}")
 	fi
 
 	echo "${timestamp}"
 }
 
 git_url() {
-	# Only the first line of `git remote' is considered.
-	echo $(LC_ALL=C git remote show origin 2>/dev/null |
-	       grep 'Fetch URL:' |
-	       sed 's/.*URL:[[:blank:]]*//' |
-	       grep ^.
-	      )
+	# get all remote branches containing the last commit (excluding 'origin/HEAD -> origin/master')
+	branches=$(git branch -r --contains HEAD | sed 's/[\t ]*//;/.*->.*/d')
+	if [ -z "$branches" ] ; then
+		echo "No remote branch contains current HEAD">&2
+		return
+	fi
+
+	# find "nearest" branch
+	local diff=9000
+	local target=
+	for branch in $branches ; do
+		curdiff=$(git rev-list --count HEAD..$branch)
+		if [ $curdiff -ge $diff ] ; then
+			continue
+		fi
+		diff=$curdiff
+		target=$branch
+	done
+
+	echo "$(git ls-remote --exit-code --get-url ${target%/*}) ${target#*/}"
 }
 
 scm_url() {
@@ -142,16 +149,24 @@ timestamp() {
 	echo ${t}
 }
 
-# Retrieve local SCM revision info. This is useful if we're working in
-# a even different SCM than upstream.
-#
-# If local copy is svn, then there is nothing to do here.
-# If local copy is git, then retrieve useful git revision info
+# Retrieve local SCM revision info. This is useful if we're working in a different SCM than upstream and/or
+# have local changes.
 local_revision() {
 	local r
 
-	if [ -d ".git" ] ; then
-		r=$(git_revision)
+	if [ -d ".svn" ] ; then
+		r=$(svn_has_local_changes && echo "-dirty")
+	elif [ -d ".git" ] ; then
+		r=$(git rev-parse --short HEAD)
+
+		local svn_base=$(git log --grep git-svn-id -1 --format='%h')
+		if [ "$svn_base" != "" ] ; then
+			r="$r-$(git rev-list --count $svn_base..HEAD)"
+		fi
+
+		if git_has_local_changes ; then
+			r="$r-dirty"
+		fi
 	fi
 
 	echo ${r}
@@ -168,6 +183,8 @@ upstream_revision() {
 		r=$(svn_revision)
 	elif [ -d ".git" ] ; then
 		r=$(gitsvn_revision)
+	else
+		r="unknown"
 	fi
 
 	echo "${r}"
@@ -180,48 +197,49 @@ show_help() {
 Options
     -h or --help
         Display this message.
+    -l or --local
+        local revision (if different from upstream) and an indicator for uncommitted changes
     -u or --upstream
         upstream flashrom revision
-    -l or --local
-        local revision (if different from upstream)
-    -t or --timestamp
-        timestamp of most recent modification
     -U or --url
         url associated with local copy of flashrom
+    -t or --timestamp
+        timestamp of most recent modification
 	"
 	return
 }
 
-if [ ! -n "${1}" ]
-then
+if [ -z "${1}" ] ; then
 	show_help;
 	echo "No options specified";
-	exit ${EXIT_SUCCESS}
+	exit ${EXIT_FAILURE}
 fi
 
 # The is the main loop
-while [[ ${1} = -* ]];
+while [ $# -gt 0 ];
 do
 	case ${1} in
 	-h|--help)
 		show_help;
 		shift;;
-	-u|--upstream)
-		echo "$(upstream_revision)";
-		shift;;
 	-l|--local)
 		echo "$(local_revision)";
 		shift;;
-	-t|--timestamp)
-		echo "$(timestamp)";
+	-u|--upstream)
+		echo "$(upstream_revision)";
 		shift;;
 	-U|--url)
 		echo "$(scm_url)";
 		shift;;
-	*)
+	-t|--timestamp)
+		echo "$(timestamp)";
+		shift;;
+	-*)
 		show_help;
 		echo "invalid option: ${1}"
-		exit ${EXIT_FAILURE}
+		exit ${EXIT_FAILURE};;
+	*)
+		shift;; # ignore arguments not starting with -
 	esac;
 done
 
