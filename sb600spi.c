@@ -313,7 +313,7 @@ static int spi100_spi_send_command(struct flashctx *flash, unsigned int writecnt
 	msg_pspew("Filling buffer: ");
 	int count;
 	for (count = 0; count < writecnt; count++) {
-		msg_pspew("[%02x]", writearr[count]);
+		msg_pspew("[%i %02x]", count, writearr[count]);
 		mmio_writeb(writearr[count], sb600_spibar + 0x80 + count);
 	}
 	msg_pspew("\n");
@@ -323,7 +323,11 @@ static int spi100_spi_send_command(struct flashctx *flash, unsigned int writecnt
 	msg_pspew("Reading buffer: ");
 	for (count = 0; count < readcnt; count++) {
 		readarr[count] = mmio_readb(sb600_spibar + 0x80 + (writecnt + count) % FIFO_SIZE_YANGTZE);
-		msg_pspew("[%02x]", readarr[count]);
+		msg_pspew("[%i %02x]", (writecnt + count) % FIFO_SIZE_YANGTZE, readarr[count]);
+	}
+	msg_pspew(" ");
+	for (; count < FIFO_SIZE_YANGTZE; count++) {
+		msg_pspew("[%i %02x]", (writecnt + count) % FIFO_SIZE_YANGTZE, mmio_readb(sb600_spibar + 0x80 + (writecnt + count) % FIFO_SIZE_YANGTZE));
 	}
 	msg_pspew("\n");
 
