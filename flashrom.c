@@ -1666,7 +1666,14 @@ void print_buildinfo(void)
 void print_version(void)
 {
 	msg_ginfo("flashrom v%s", flashrom_version);
+	if (strlen(FLASHROM_LOCALREV) > 0)
+		msg_ginfo("-%s", FLASHROM_LOCALREV);
+
 	print_sysinfo();
+	msg_ginfo("\nmodified %s", FLASHROM_TIMESTAMP);
+	if (strlen(FLASHROM_SCMURL) > 0)
+		msg_ginfo(", available from %s", FLASHROM_SCMURL);
+
 	msg_ginfo("\n");
 }
 

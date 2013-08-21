@@ -336,13 +336,17 @@ CLI_OBJS = cli_classic.o cli_output.o print.o
 # Set the flashrom version string from the highest revision number of the checked out flashrom files.
 # Note to packagers: Any tree exported with "make export" or "make tarball"
 # will not require subversion. The downloadable snapshots are already exported.
-SVNVERSION := $(shell ./util/getrevision.sh -u)
+UPSTREAMREV := $(shell ./util/getrevision.sh --upstream)
+LOCALREV := $(shell ./util/getrevision.sh --local)
+TIMESTAMP := $(shell ./util/getrevision.sh --timestamp)
+SCMURL := $(shell ./util/getrevision.sh --url)
 
 RELEASE := 0.9.7
-VERSION := $(RELEASE)-$(SVNVERSION)
+VERSION := $(RELEASE)-$(UPSTREAMREV)
 RELEASENAME ?= $(VERSION)
 
-SVNDEF := -D'FLASHROM_VERSION="$(VERSION)"'
+SCMDEF := -D'FLASHROM_VERSION="$(VERSION)"' -D'FLASHROM_SCMURL="$(SCMURL)"' \
+          -D'FLASHROM_LOCALREV="$(LOCALREV)"' -D'FLASHROM_TIMESTAMP="$(TIMESTAMP)"'
 
 ###############################################################################
 # Default settings of CONFIG_* variables.
@@ -667,7 +671,7 @@ libflashrom.a: $(LIBFLASHROM_OBJS)
 TAROPTIONS = $(shell LC_ALL=C tar --version|grep -q GNU && echo "--owner=root --group=root")
 
 %.o: %.c .features
-	$(CC) -MMD $(CFLAGS) $(CPPFLAGS) $(FLASHROM_CFLAGS) $(FEATURE_CFLAGS) $(SVNDEF) -o $@ -c $<
+	$(CC) -MMD $(CFLAGS) $(CPPFLAGS) $(FLASHROM_CFLAGS) $(FEATURE_CFLAGS) $(SCMDEF) -o $@ -c $<
 
 # Make sure to add all names of generated binaries here.
 # This includes all frontends and libflashrom.
@@ -878,10 +882,13 @@ install: $(PROGRAM)$(EXEC_SUFFIX) $(PROGRAM).8
 
 export: $(PROGRAM).8
 	@rm -rf $(EXPORTDIR)/flashrom-$(RELEASENAME)
-	@svn export -r BASE . $(EXPORTDIR)/flashrom-$(RELEASENAME)
-	@sed "s/^SVNVERSION.*/SVNVERSION := $(SVNVERSION)/" Makefile >$(EXPORTDIR)/flashrom-$(RELEASENAME)/Makefile
+	@svn export -r BASE . $(EXPORTDIR)/flashrom-$(RELEASENAME) 2>/dev/null || git checkout-index -a -f --prefix=$(EXPORTDIR)/flashrom-$(RELEASENAME)/
+	@# If SCMVERSION or SCMEXTVERSION contain a slash or SCMURL contains a hash, this will explode
+	@sed "s/^SCMVERSION.*/SCMVERSION := $(SCMVERSION)/;s/^SCMEXTVERSION.*/SCMEXTVERSION := $(SCMEXTVERSION)/;s#^SCMURL.*#SCMURL := $(SCMURL)#" Makefile >$(EXPORTDIR)/flashrom-$(RELEASENAME)/Makefile
 	@cp $(PROGRAM).8 "$(EXPORTDIR)/flashrom-$(RELEASENAME)/$(PROGRAM).8"
-	@LC_ALL=C svn log >$(EXPORTDIR)/flashrom-$(RELEASENAME)/ChangeLog
+	@# ChangeLog should be in English, but we want UTF-8 for names.
+	@( LC_ALL=en_US.UTF-8 svn log 2>/dev/null || LC_ALL=en_US.UTF-8 git log 2>/dev/null || echo "Unable to extract log from SCM" ) >$(EXPORTDIR)/flashrom-$(RELEASENAME)/ChangeLog
+	@rm -f $(EXPORTDIR)/flashrom-$(RELEASENAME)/.gitignore $(EXPORTDIR)/flashrom-$(RELEASENAME)/.gitattributes $(EXPORTDIR)/flashrom-$(RELEASENAME)/.gitmodules
 	@echo Exported $(EXPORTDIR)/flashrom-$(RELEASENAME)/
 
 tarball: export
