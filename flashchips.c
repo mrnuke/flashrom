@@ -26,6 +26,18 @@
 #include "flashchips.h"
 #include "chipdrivers.h"
 
+const struct flashchip flashchips[];
+
+const struct flashchip *get_chip_from_ids(uint32_t manufacture_id, uint32_t model_id) {
+	const struct flashchip *chip;
+
+	for (chip = flashchips; chip && chip->name; chip++) {
+		if (chip->manufacture_id == manufacture_id && chip->model_id == model_id)
+			return chip;
+	}
+	return NULL;
+}
+
 /**
  * List of supported flash chips.
  *

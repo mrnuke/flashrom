@@ -27,6 +27,9 @@
 
 #include "flash.h"	/* for chipaddr and flashctx */
 
+/* flashchips.c */
+const struct flashchip *get_chip_from_ids(uint32_t manufacture_id, uint32_t model_id);
+
 /* spi.c */
 int spi_aai_write(struct flashctx *flash, uint8_t *buf, unsigned int start, unsigned int len);
 int spi_chip_write_256(struct flashctx *flash, uint8_t *buf, unsigned int start, unsigned int len);
