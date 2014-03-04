@@ -2,6 +2,7 @@
 #include <string.h>
 #include "programmer.h"
 #include "qiprog.h"
+#include "chipdrivers.h"
 
 /*
  * We prefix our programmer functions with "flashrom_" because some would
@@ -74,6 +75,7 @@ static int flashrom_qiprog_probe(struct flashctx *flash)
 {
 	struct qiprog_chip_id ids[9];
 	struct qiprog_device *dev;
+	const struct flashchip *db_chip;
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
@@ -87,11 +89,21 @@ static int flashrom_qiprog_probe(struct flashctx *flash)
 		return -1;
 	}
 
-	flash->chip->manufacture_id = ids[0].device_id;
-	flash->chip->model_id = ids[0].device_id;
+	/*
+	 * The great marriage of qiprog and flashrom:
+	 *   - qiprog gets the chip identifiers efficiently
+	 *   - flashrom knows everything else about the chip
+	 */
+	db_chip = get_chip_from_ids(ids[0].vendor_id, ids[0].device_id);
+	if (!db_chip) {
+		msg_gerr("No chip found matching ID %x:%x\n",
+			 ids[0].vendor_id, ids[0].device_id);
+		return -1;
+	}
+
+	*flash->chip = *db_chip;
 
 	printf("Proba dona\n");
-	flash->chip->tested = TEST_OK_PREW;
 	return 1;
 }
 
