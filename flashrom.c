@@ -321,6 +321,18 @@ const struct programmer_entry programmer_table[] = {
 	},
 #endif
 
+#if CONFIG_QIPROG == 1
+	{
+		.name			= "qiprog",
+		.type			= OTHER,
+		.devs.note		= "Anything libqiprog can handle, bitch!",
+		.init			= flashrom_qiprog_init,
+		.map_flash_region	= fallback_map,
+		.unmap_flash_region	= fallback_unmap,
+		.delay			= internal_delay,
+	},
+#endif
+
 	{0}, /* This entry corresponds to PROGRAMMER_INVALID. */
 };
 

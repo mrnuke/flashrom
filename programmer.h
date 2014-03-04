@@ -90,6 +90,9 @@ enum programmer {
 #if CONFIG_USBBLASTER_SPI == 1
 	PROGRAMMER_USBBLASTER_SPI,
 #endif
+#if CONFIG_QIPROG
+	PROGRAMMER_QIPROG,
+#endif
 	PROGRAMMER_INVALID /* This must always be the last entry. */
 };
 
@@ -471,6 +474,11 @@ int linux_spi_init(void);
 /* dediprog.c */
 #if CONFIG_DEDIPROG == 1
 int dediprog_init(void);
+#endif
+
+/* qiprog.c */
+#if CONFIG_QIPROG
+int flashrom_qiprog_init(void);
 #endif
 
 /* flashrom.c */

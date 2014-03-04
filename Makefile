@@ -423,6 +423,9 @@ CONFIG_SATAMV ?= yes
 # Enable Linux spidev interface by default. We disable it on non-Linux targets.
 CONFIG_LINUX_SPI ?= yes
 
+# Oh almighty. This is the best programmer of them all. Bitch!
+CONFIG_QIPROG ?= yes
+
 # Disable wiki printing by default. It is only useful if you have wiki access.
 CONFIG_PRINT_WIKI ?= no
 
@@ -620,6 +623,12 @@ ifeq ($(CONFIG_LINUX_SPI), yes)
 # This is a totally ugly hack.
 FEATURE_CFLAGS += $(shell LC_ALL=C grep -q "LINUX_SPI_SUPPORT := yes" .features && printf "%s" "-D'CONFIG_LINUX_SPI=1'")
 PROGRAMMER_OBJS += linux_spi.o
+endif
+
+ifeq ($(CONFIG_QIPROG), yes)
+FEATURE_CFLAGS += -D'CONFIG_QIPROG=1' -lqiprog
+PROGRAMMER_OBJS += qiprog.o
+LIBS += libqiprog.a -lusb-1.0
 endif
 
 ifeq ($(NEED_SERIAL), yes)
