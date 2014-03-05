@@ -23,6 +23,7 @@ int flashrom_qiprog_init(void)
 	size_t ndevs;
 	enum qiprog_bus bus = 0;
 	struct qiprog_device *dev = NULL;
+	struct qiprog_capabilities caps;
 
 	/* Debug _everything_ */
 	qiprog_set_loglevel(QIPROG_LOG_SPEW);
@@ -65,7 +66,28 @@ int flashrom_qiprog_init(void)
 		}
 	}
 
-	(void) bus;
+
+	if (qiprog_get_capabilities(dev, &caps) != QIPROG_SUCCESS) {
+		msg_perr("Could not get programmer's capabilities.\n");
+		return -1;
+	}
+
+	if (!(caps.bus_master & bus)) {
+		msg_perr("Programmer does not support requested bus type\n");
+		return -1;
+	}
+
+	/*
+	 * Operating the programmer without setting the bus could work on some
+	 * programmers, but is not guaranteed, and on multi-bus programmers, we
+	 * could end up running on a different bus than the one we expect.
+	 */
+	if (qiprog_set_bus(dev, bus) != QIPROG_SUCCESS) {
+		msg_perr("Could not set bus\n");
+		return -1;
+
+	}
+
 	printf("so far so good\n");
 	return 0;
 }
