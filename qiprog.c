@@ -155,8 +155,13 @@ static int flashrom_qiprog_read(struct flashctx *flash, uint8_t *buf,
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
-	msg_pinfo("reada fucka\n");
-	return -1;
+	msg_pinfo("reada %x : %x\n", start, len);
+	if (qiprog_read(dev, start, buf, len) != QIPROG_SUCCESS) {
+		msg_perr("Error reading array contents\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 static int flashrom_qiprog_write(struct flashctx *flash, uint8_t *buf,
