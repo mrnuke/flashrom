@@ -105,6 +105,7 @@ static int flashrom_qiprog_probe(struct flashctx *flash)
 	struct qiprog_chip_id ids[9];
 	struct qiprog_device *dev;
 	const struct flashchip *db_chip;
+	qiprog_err ret;
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
@@ -131,6 +132,17 @@ static int flashrom_qiprog_probe(struct flashctx *flash)
 	}
 
 	*flash->chip = *db_chip;
+
+	/*
+	 * Now that we know the chip we're dealing with, we need to let qiprog
+	 * know how big it is. We're using chip index 0 for now, since we've
+	 * only considered the first chip when reading the chip ids.
+	 */
+	ret = qiprog_set_chip_size(dev, 0, flash->chip->total_size * 1024);
+	if (ret != QIPROG_SUCCESS) {
+		msg_perr("Could not inform qiprog of chip size. Aborting\n");
+		return -1;
+	}
 
 	msg_pinfo("Proba dona\n");
 	return 1;
