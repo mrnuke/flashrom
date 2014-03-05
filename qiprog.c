@@ -105,6 +105,7 @@ static int flashrom_qiprog_probe(struct flashctx *flash)
 	struct qiprog_chip_id ids[9];
 	struct qiprog_device *dev;
 	const struct flashchip *db_chip;
+	size_t i;
 	qiprog_err ret;
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
@@ -142,6 +143,21 @@ static int flashrom_qiprog_probe(struct flashctx *flash)
 	if (ret != QIPROG_SUCCESS) {
 		msg_perr("Could not inform qiprog of chip size. Aborting\n");
 		return -1;
+	}
+
+	/*
+	 * HACK: flashrom uses hardcoded functions to access flash chips, which
+	 * default to using the parallel programmer type, thus avoiding our
+	 * opaque read/erase/write functions. As a result, override that
+	 */
+	flash->chip->read = flash->pgm->opaque.read;
+	flash->chip->write = flash->pgm->opaque.write;
+
+	/* Now replace each erase function with our erase */
+	for (i = 0; i < NUM_ERASEFUNCTIONS; i++) {
+		if (flash->chip->block_erasers[i].block_erase == NULL)
+			break;
+		flash->chip->block_erasers[i].block_erase = flash->pgm->opaque.erase;
 	}
 
 	msg_pinfo("Proba dona\n");
