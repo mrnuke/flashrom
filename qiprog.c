@@ -188,8 +188,12 @@ static int flashrom_qiprog_write(struct flashctx *flash, uint8_t *buf,
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
-	msg_pinfo("writa fucka\n");
-	return -1;
+	msg_pinfo("writa %x : %x\n", start, len);
+
+	/* FIXME: error fucking check */
+	qiprog_write(dev, start, buf, len);
+
+	return 0;
 }
 
 static int flashrom_qiprog_erase(struct flashctx *flash, unsigned int blockaddr,
