@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 #include "programmer.h"
 #include "qiprog.h"
 #include "chipdrivers.h"
@@ -198,8 +199,15 @@ static int flashrom_qiprog_erase(struct flashctx *flash, unsigned int blockaddr,
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
-	msg_pinfo("erasa fucka\n");
-	return -1;
+	msg_pinfo("erasa %x : %x\n", blockaddr, blocklen);
+
+	/* FIXME: Smarten this shit up a bit, and error fucking check */
+	void *bs = malloc(blocklen);
+	memset(bs, 0xff, blocklen);
+	qiprog_write(dev, blockaddr, bs, blocklen);
+	free(bs);
+
+	return 0;
 }
 
 
