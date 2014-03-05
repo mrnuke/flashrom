@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 #include "programmer.h"
 #include "qiprog.h"
@@ -29,13 +28,13 @@ int flashrom_qiprog_init(void)
 	qiprog_set_loglevel(QIPROG_LOG_SPEW);
 
 	if (qiprog_init(&ctx) != QIPROG_SUCCESS) {
-		printf("libqiprog initialization failure\n");
+		msg_gerr("libqiprog initialization failure\n");
 		return -1;
 	}
 
 	ndevs = qiprog_get_device_list(ctx, &devs);
 	if (!ndevs) {
-		printf("No device found\n");
+		msg_perr("No device found\n");
 		return -1;
 	}
 
@@ -50,7 +49,7 @@ int flashrom_qiprog_init(void)
 	dev = devs[0];
 
 	if (qiprog_open_device(dev) != QIPROG_SUCCESS) {
-		printf("Error opening device\n");
+		msg_perr("Error opening device\n");
 		return -1;
 	}
 
@@ -88,7 +87,7 @@ int flashrom_qiprog_init(void)
 
 	}
 
-	printf("so far so good\n");
+	msg_pinfo("so far so good\n");
 	return 0;
 }
 
@@ -110,12 +109,12 @@ static int flashrom_qiprog_probe(struct flashctx *flash)
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
 	if (qiprog_read_chip_id(dev, ids) != QIPROG_SUCCESS) {
-		printf("Could not read IDs of connected chips\n");
+		msg_cerr("Could not read IDs of connected chips\n");
 		return -1;
 	}
 
 	if (ids[0].id_method == QIPROG_ID_INVALID) {
-		printf("No connected chips found\n");
+		msg_gerr("No connected chips found\n");
 		return -1;
 	}
 
@@ -133,7 +132,7 @@ static int flashrom_qiprog_probe(struct flashctx *flash)
 
 	*flash->chip = *db_chip;
 
-	printf("Proba dona\n");
+	msg_pinfo("Proba dona\n");
 	return 1;
 }
 
@@ -144,7 +143,7 @@ static int flashrom_qiprog_read(struct flashctx *flash, uint8_t *buf,
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
-	printf("reada fucka\n");
+	msg_pinfo("reada fucka\n");
 	return -1;
 }
 
@@ -155,7 +154,7 @@ static int flashrom_qiprog_write(struct flashctx *flash, uint8_t *buf,
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
-	printf("writa fucka\n");
+	msg_pinfo("writa fucka\n");
 	return -1;
 }
 
@@ -166,7 +165,7 @@ static int flashrom_qiprog_erase(struct flashctx *flash, unsigned int blockaddr,
 
 	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
-	printf("erasa fucka\n");
+	msg_pinfo("erasa fucka\n");
 	return -1;
 }
 
