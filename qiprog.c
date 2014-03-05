@@ -22,7 +22,7 @@ int flashrom_qiprog_init(void)
 	const char *arg;
 	size_t ndevs;
 	enum qiprog_bus bus = 0;
-	static struct qiprog_device *dev = NULL;
+	struct qiprog_device *dev = NULL;
 
 	/* Debug _everything_ */
 	qiprog_set_loglevel(QIPROG_LOG_SPEW);
