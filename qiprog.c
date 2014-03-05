@@ -142,10 +142,7 @@ static int flashrom_qiprog_read(struct flashctx *flash, uint8_t *buf,
 {
 	struct qiprog_device *dev = (void *)flash->pgm->opaque.data;
 
-	if (!dev) {
-		printf("Motherfucker\n");
-		return -1;
-	}
+	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
 	printf("reada fucka\n");
 	return -1;
@@ -156,10 +153,7 @@ static int flashrom_qiprog_write(struct flashctx *flash, uint8_t *buf,
 {
 	struct qiprog_device *dev = (void *)flash->pgm->opaque.data;
 
-	if (!dev) {
-		printf("Motherfucker\n");
-		return -1;
-	}
+	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
 	printf("writa fucka\n");
 	return -1;
@@ -170,10 +164,7 @@ static int flashrom_qiprog_erase(struct flashctx *flash, unsigned int blockaddr,
 {
 	struct qiprog_device *dev = (void *)flash->pgm->opaque.data;
 
-	if (!dev) {
-		printf("Motherfucker\n");
-		return -1;
-	}
+	INIT_DEV_AND_CHECK_VALID(dev, flash);
 
 	printf("erasa fucka\n");
 	return -1;
