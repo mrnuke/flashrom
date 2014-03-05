@@ -58,7 +58,7 @@ int flashrom_qiprog_init(void)
 	register_opaque_programmer(&qi_pgm);
 
 	/* FIXME: What is this about? */
-	arg = extract_programmer_param("type");
+	arg = extract_programmer_param("bus");
 	if (arg) {
 		if (!strcasecmp(arg, "lpc")) {
 			bus = QIPROG_BUS_LPC;
