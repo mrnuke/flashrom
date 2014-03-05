@@ -38,7 +38,14 @@ int flashrom_qiprog_init(void)
 		return -1;
 	}
 
-	/* Choose the first device for now */
+	/*
+	 * TODO: We choose the first device for now
+	 *   - Once libqiprog supports it, we might want to allow selecting the
+	 *     device based on, for example, its serial number.
+	 *   - We could also provide a programmer option to print details about
+	 *     connected devices
+	 *   - provide programmer option for setting bus voltage.
+	 */
 	dev = devs[0];
 
 	if (qiprog_open_device(dev) != QIPROG_SUCCESS) {
@@ -46,10 +53,11 @@ int flashrom_qiprog_init(void)
 		return -1;
 	}
 
+	/* We only need a qiprog device pointer as a context */
 	qi_pgm.data = dev;
-
 	register_opaque_programmer(&qi_pgm);
 
+	/* FIXME: What is this about? */
 	arg = extract_programmer_param("type");
 	if (arg) {
 		if (!strcasecmp(arg, "lpc")) {
