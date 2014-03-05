@@ -92,11 +92,11 @@ int flashrom_qiprog_init(void)
 	return 0;
 }
 
-#define INIT_DEV_AND_CHECK_VALID(dev, flash)				\
+#define INIT_DEV_AND_CHECK_VALID(dev, flash)			\
 	do {							\
 		dev = (void *)flash->pgm->opaque.data;		\
 		if (!dev) {					\
-			printf("Motherfuckerd\n");		\
+			msg_gerr("Motherfuckerd. BUG!\n");	\
 			return -1;				\
 		}						\
 	} while(0)
