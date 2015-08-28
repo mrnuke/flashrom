@@ -122,6 +122,7 @@ enum write_granularity {
 #define FEATURE_WRSR_EITHER	(FEATURE_WRSR_EWSR | FEATURE_WRSR_WREN)
 #define FEATURE_OTP		(1 << 8)
 #define FEATURE_QPI		(1 << 9)
+#define FEATURE_UNBOUND_READ	(1 << 10)
 
 enum test_state {
 	OK = 0,
@@ -131,17 +132,20 @@ enum test_state {
 	NA,	/* Not applicable (e.g. write support on ROM chips) */
 };
 
-#define TEST_UNTESTED	(struct tested){ .probe = NT, .read = NT, .erase = NT, .write = NT }
+#define TEST_UNTESTED	(struct tested){ .probe = NT, .read = NT, .uread = NT, .erase = NT, .write = NT }
 
-#define TEST_OK_PROBE	(struct tested){ .probe = OK, .read = NT, .erase = NT, .write = NT }
-#define TEST_OK_PR	(struct tested){ .probe = OK, .read = OK, .erase = NT, .write = NT }
-#define TEST_OK_PRE	(struct tested){ .probe = OK, .read = OK, .erase = OK, .write = NT }
-#define TEST_OK_PREW	(struct tested){ .probe = OK, .read = OK, .erase = OK, .write = OK }
+#define TEST_OK_PROBE	(struct tested){ .probe = OK, .read = NT, .uread = NT, .erase = NT, .write = NT }
+#define TEST_OK_PR	(struct tested){ .probe = OK, .read = OK, .uread = NT, .erase = NT, .write = NT }
+#define TEST_OK_PRU	(struct tested){ .probe = OK, .read = OK, .uread = OK, .erase = NT, .write = NT }
+#define TEST_OK_PRE	(struct tested){ .probe = OK, .read = OK, .uread = NT, .erase = OK, .write = NT }
+#define TEST_OK_PRUE	(struct tested){ .probe = OK, .read = OK, .uread = OK, .erase = OK, .write = NT }
+#define TEST_OK_PREW	(struct tested){ .probe = OK, .read = OK, .uread = NT, .erase = OK, .write = OK }
+#define TEST_OK_PRUEW	(struct tested){ .probe = OK, .read = OK, .uread = OK, .erase = OK, .write = OK }
 
-#define TEST_BAD_PROBE	(struct tested){ .probe = BAD, .read = NT, .erase = NT, .write = NT }
-#define TEST_BAD_PR	(struct tested){ .probe = BAD, .read = BAD, .erase = NT, .write = NT }
-#define TEST_BAD_PRE	(struct tested){ .probe = BAD, .read = BAD, .erase = BAD, .write = NT }
-#define TEST_BAD_PREW	(struct tested){ .probe = BAD, .read = BAD, .erase = BAD, .write = BAD }
+#define TEST_BAD_PROBE	(struct tested){ .probe = BAD, .read = NT, .uread = NT, .erase = NT, .write = NT }
+#define TEST_BAD_PR	(struct tested){ .probe = BAD, .read = BAD, .uread = NT, .erase = NT, .write = NT }
+#define TEST_BAD_PRE	(struct tested){ .probe = BAD, .read = BAD, .uread = NT, .erase = BAD, .write = NT }
+#define TEST_BAD_PREW	(struct tested){ .probe = BAD, .read = BAD, .uread = NT, .erase = BAD, .write = BAD }
 
 struct flashctx;
 typedef int (erasefunc_t)(struct flashctx *flash, unsigned int addr, unsigned int blocklen);
@@ -170,6 +174,7 @@ struct flashchip {
 	struct tested {
 		enum test_state probe;
 		enum test_state read;
+		enum test_state uread;
 		enum test_state erase;
 		enum test_state write;
 	} tested;

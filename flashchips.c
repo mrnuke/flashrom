@@ -13961,8 +13961,8 @@ const struct flashchip flashchips[] = {
 		.page_size	= 256,
 		/* supports SFDP */
 		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44, read ID 0x4B */
-		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
-		.tested		= TEST_OK_PREW,
+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_UNBOUND_READ,
+		.tested		= TEST_OK_PRUEW,
 		.probe		= probe_spi_rdid,
 		.probe_timing	= TIMING_ZERO,
 		.block_erasers	=
