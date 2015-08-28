@@ -85,7 +85,10 @@ int default_spi_read(struct flashctx *flash, uint8_t *buf, unsigned int start,
 			 "flashrom@flashrom.org\n", __func__);
 		return 1;
 	}
-	return spi_read_chunked(flash, buf, start, len, max_data);
+	if (flash->chip->feature_bits & FEATURE_UNBOUND_READ)
+		return spi_read_unbound(flash, buf, start, len, max_data);
+	else
+		return spi_read_chunked(flash, buf, start, len, max_data);
 }
 
 int default_spi_write_256(struct flashctx *flash, const uint8_t *buf, unsigned int start, unsigned int len)

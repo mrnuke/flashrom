@@ -978,6 +978,24 @@ int spi_read_chunked(struct flashctx *flash, uint8_t *buf, unsigned int start,
 }
 
 /*
+ * Read a part of the flash chip.
+ * Ignore pages as we shall read the data continuously. The only bound is the chunksize.
+ */
+int spi_read_unbound(struct flashctx *flash, uint8_t *buf, unsigned int start,
+		     unsigned int len, unsigned int chunksize)
+{
+	int rc = 0;
+	unsigned int i;
+
+	for (i = start; i < (start + len); i += chunksize) {
+		rc = spi_nbyte_read(flash, i, buf + (i - start), min(chunksize, start + len - i));
+		if (rc)
+			break;
+	}
+	return rc;
+}
+
+/*
  * Write a part of the flash chip.
  * FIXME: Use the chunk code from Michael Karcher instead.
  * Each page is written separately in chunks with a maximum size of chunksize.

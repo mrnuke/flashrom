@@ -73,17 +73,22 @@ void print_chip_support_status(const struct flashchip *chip)
 	if ((chip->tested.probe == BAD) || (chip->tested.probe == NT) ||
 	    (chip->tested.read == BAD)  || (chip->tested.read == NT) ||
 	    (chip->tested.erase == BAD) || (chip->tested.erase == NT) ||
-	    (chip->tested.write == BAD) || (chip->tested.write == NT)){
+	    (chip->tested.write == BAD) || (chip->tested.write == NT) ||
+	    ((chip->feature_bits & FEATURE_UNBOUND_READ) &&
+	     (chip->tested.uread == BAD || chip->tested.uread == NT))) {
 		msg_cinfo("===\n");
 		if ((chip->tested.probe == BAD) ||
 		    (chip->tested.read == BAD) ||
 		    (chip->tested.erase == BAD) ||
-		    (chip->tested.write == BAD)) {
+		    (chip->tested.write == BAD) ||
+		    ((chip->feature_bits & FEATURE_UNBOUND_READ) && chip->tested.uread == BAD)) {
 			msg_cinfo("This flash part has status NOT WORKING for operations:");
 			if (chip->tested.probe == BAD)
 				msg_cinfo(" PROBE");
 			if (chip->tested.read == BAD)
 				msg_cinfo(" READ");
+			if ((chip->feature_bits & FEATURE_UNBOUND_READ) && chip->tested.uread == BAD)
+				msg_cinfo(" UNBOUND_READ");
 			if (chip->tested.erase == BAD)
 				msg_cinfo(" ERASE");
 			if (chip->tested.write == BAD)
@@ -93,12 +98,15 @@ void print_chip_support_status(const struct flashchip *chip)
 		if ((chip->tested.probe == NT) ||
 		    (chip->tested.read == NT) ||
 		    (chip->tested.erase == NT) ||
-		    (chip->tested.write == NT)) {
+		    (chip->tested.write == NT) ||
+		    ((chip->feature_bits & FEATURE_UNBOUND_READ) && chip->tested.uread == NT)) {
 			msg_cinfo("This flash part has status UNTESTED for operations:");
 			if (chip->tested.probe == NT)
 				msg_cinfo(" PROBE");
 			if (chip->tested.read == NT)
 				msg_cinfo(" READ");
+			if ((chip->feature_bits & FEATURE_UNBOUND_READ) && chip->tested.uread == NT)
+				msg_cinfo(" UNBOUND_READ");
 			if (chip->tested.erase == NT)
 				msg_cinfo(" ERASE");
 			if (chip->tested.write == NT)
