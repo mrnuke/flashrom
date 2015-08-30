@@ -34,8 +34,6 @@
  * See also the USB-Blaster Download Cable User Guide: http://www.altera.com/literature/ug/ug_usb_blstr.pdf
  */
 
-#if CONFIG_USBBLASTER_SPI == 1
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -221,5 +219,3 @@ static const struct spi_master spi_master_usbblaster = {
 	.write_256	= default_spi_write_256,
 	.write_aai	= default_spi_write_aai,
 };
-
-#endif

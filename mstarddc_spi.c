@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#if CONFIG_MSTARDDC_SPI == 1
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -233,5 +231,3 @@ static const struct spi_master spi_master_mstarddc = {
 	.write_256 = default_spi_write_256,
 	.write_aai = default_spi_write_aai,
 };
-
-#endif

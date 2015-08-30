@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#if CONFIG_LINUX_SPI == 1
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -184,5 +182,3 @@ static int linux_spi_write_256(struct flashctx *flash, const uint8_t *buf, unsig
 	return spi_write_chunked(flash, buf, start, len,
 				((unsigned int)getpagesize()) - 4);
 }
-
-#endif // CONFIG_LINUX_SPI == 1

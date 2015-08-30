@@ -614,15 +614,13 @@ NEED_PCI := yes
 endif
 
 ifeq ($(CONFIG_FT2232_SPI), yes)
-# This is a totally ugly hack.
-FEATURE_CFLAGS += $(shell LC_ALL=C grep -q "FTDISUPPORT := yes" .features && printf "%s" "-D'CONFIG_FT2232_SPI=1'")
+FEATURE_CFLAGS += -D'CONFIG_FT2232_SPI=1'
 NEED_FTDI := yes
 PROGRAMMER_OBJS += ft2232_spi.o
 endif
 
 ifeq ($(CONFIG_USBBLASTER_SPI), yes)
-# This is a totally ugly hack.
-FEATURE_CFLAGS += $(shell LC_ALL=C grep -q "FTDISUPPORT := yes" .features && printf "%s" "-D'CONFIG_USBBLASTER_SPI=1'")
+FEATURE_CFLAGS += -D'CONFIG_USBBLASTER_SPI=1'
 NEED_FTDI := yes
 PROGRAMMER_OBJS += usbblaster_spi.o
 endif
@@ -708,14 +706,12 @@ NEED_PCI := yes
 endif
 
 ifeq ($(CONFIG_LINUX_SPI), yes)
-# This is a totally ugly hack.
-FEATURE_CFLAGS += $(shell LC_ALL=C grep -q "LINUX_SPI_SUPPORT := yes" .features && printf "%s" "-D'CONFIG_LINUX_SPI=1'")
+FEATURE_CFLAGS += -D'CONFIG_LINUX_SPI=1'
 PROGRAMMER_OBJS += linux_spi.o
 endif
 
 ifeq ($(CONFIG_MSTARDDC_SPI), yes)
-# This is a totally ugly hack.
-FEATURE_CFLAGS += $(shell LC_ALL=C grep -q "LINUX_I2C_SUPPORT := yes" .features && printf "%s" "-D'CONFIG_MSTARDDC_SPI=1'")
+FEATURE_CFLAGS += -D'CONFIG_MSTARDDC_SPI=1'
 NEED_LINUX_I2C := yes
 PROGRAMMER_OBJS += mstarddc_spi.o
 endif
