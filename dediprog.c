@@ -515,8 +515,9 @@ static int dediprog_spi_send_command(struct flashctx *flash,
 		msg_perr("Invalid readcnt=%i, aborting.\n", readcnt);
 		return 1;
 	}
-	
-	ret = usb_control_msg(dediprog_handle, REQTYPE_EP_OUT, CMD_TRANSCEIVE, 0, readcnt ? 0x1 : 0x0,
+
+	ret = usb_control_msg(dediprog_handle, REQTYPE_EP_OUT, CMD_TRANSCEIVE,
+			      readcnt ? 0x1 : 0x0, 0,
 			      (char *)writearr, writecnt, DEFAULT_TIMEOUT);
 	if (ret != writecnt) {
 		msg_perr("Send SPI failed, expected %i, got %i %s!\n",
