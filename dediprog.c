@@ -263,8 +263,9 @@ static int dediprog_set_spi_speed(unsigned int spispeed_idx)
 	const struct dediprog_spispeeds *spispeed = &spispeeds[spispeed_idx];
 	msg_pdbg("SPI speed is %sHz\n", spispeed->name);
 
-	int ret = usb_control_msg(dediprog_handle, REQTYPE_EP_OUT, CMD_SET_SPI_CLK, spispeed->speed, 0xff,
-				  NULL, 0x0, DEFAULT_TIMEOUT);
+	int ret = usb_control_msg(dediprog_handle, REQTYPE_EP_OUT,
+				  CMD_SET_SPI_CLK, spispeed->speed, 0, NULL, 0,
+				  DEFAULT_TIMEOUT);
 	if (ret != 0x0) {
 		msg_perr("Command Set SPI Speed 0x%x failed!\n", spispeed->speed);
 		return 1;
